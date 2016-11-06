@@ -1,0 +1,35 @@
+{
+  "name": "hooks-promise",
+  "version": "0.1.0",
+  "description": "Hooks functionality for methods returning a Promise",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test --recursive",
+    "coverage": "istanbul cover _mocha -- -R spec --recursive",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec --recursive && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
+  },
+  "engines": {
+    "node": ">=4.0"
+  },
+  "keywords": [
+    "hooks",
+    "promise",
+    "middleware"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sebelga/gstore-node.git"
+  },
+  "author": "Sébastien Loix",
+  "license": "ISC",
+  "dependencies": {
+    "is": "^3.2.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.1.2",
+    "mocha-lcov-reporter": "^1.2.0",
+    "sinon": "^1.17.4",
+    "sinon-as-promised": "^4.0.2"
+  }
+}
