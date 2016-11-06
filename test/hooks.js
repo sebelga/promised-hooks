@@ -89,6 +89,25 @@ describe('hooks-promise', () => {
                 expect(spyOriginalMethod.getCall(0).args).deep.equal(['newParam1', 'newParam2']);
             });
         });
+
+        it('should work with methods from an object', () => {
+            let modelObject = {
+                save: function() { return Promise.resolve(); },
+                test1: function() {}
+            };
+
+            Object.keys(_hooks).forEach((k) => {
+                modelObject[k] = _hooks[k];
+            });
+
+            spyOriginalMethod = sinon.spy(modelObject, 'save');
+            modelObject.pre('save', spies.preHook1);
+            modelObject.pre('save', spies.preHook2);
+
+            return modelObject.save().then(() => {
+                sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
+            });
+        });
     });
 
     describe('post()', () => {
@@ -140,6 +159,25 @@ describe('hooks-promise', () => {
 
             return model.save().then((response) => {
                 expect(response).deep.equal('5678');
+            });
+        });
+
+        it('should work with methods from an object', () => {
+            let modelObject = {
+                save: function() { return Promise.resolve(); },
+                test1: function() {}
+            };
+
+            Object.keys(_hooks).forEach((k) => {
+                modelObject[k] = _hooks[k];
+            });
+
+            spyOriginalMethod = sinon.spy(modelObject, 'save');
+            modelObject.post('save', spies.postHook1);
+            modelObject.post('save', spies.postHook2);
+
+            return modelObject.save().then(() => {
+                sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
             });
         });
     });
