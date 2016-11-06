@@ -1,5 +1,5 @@
 {
-  "name": "hooks-promise",
+  "name": "promised-hooks",
   "version": "1.0.0",
   "description": "Hooks functionality for methods returning a Promise",
   "main": "index.js",
