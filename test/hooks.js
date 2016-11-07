@@ -10,18 +10,10 @@ const Model = require('../mocks/model.mock');
 
 describe('hooks-promise', () => {
     let model;
-    let _hooks = {
-        hook: hooks.hook,
-        pre: hooks.pre,
-        post: hooks.post,
-        _lazySetupHooks: hooks._lazySetupHooks
-    };
+
     beforeEach(() => {
         model = new Model();
-
-        Object.keys(_hooks).forEach((k) => {
-            model[k] = _hooks[k];
-        });
+        hooks.wrap(model);
     });
 
     describe('pre()', () => {
@@ -83,7 +75,7 @@ describe('hooks-promise', () => {
 
         it('should pass parameter to originalMethod', () => {
             const args = ['abc', 123];
-            return model.save(...args).then(() => {
+            return model.save('abc', 123).then((argsPassed) => {
                 expect(spyOriginalMethod.getCall(0).args).deep.equal(args);
             });
         });
@@ -98,20 +90,18 @@ describe('hooks-promise', () => {
         });
 
         it('should work with methods from an object', () => {
-            let modelObject = {
+            let myObject = {
                 save: function() { return Promise.resolve(); },
                 test1: function() {}
             };
 
-            Object.keys(_hooks).forEach((k) => {
-                modelObject[k] = _hooks[k];
-            });
+            hooks.wrap(myObject);
 
-            spyOriginalMethod = sinon.spy(modelObject, 'save');
-            modelObject.pre('save', spies.preHook1);
-            modelObject.pre('save', spies.preHook2);
+            spyOriginalMethod = sinon.spy(myObject, 'save');
+            myObject.pre('save', spies.preHook1);
+            myObject.pre('save', spies.preHook2);
 
-            return modelObject.save().then(() => {
+            return myObject.save().then(() => {
                 sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
             });
         });
@@ -177,20 +167,18 @@ describe('hooks-promise', () => {
         });
 
         it('should work with methods from an object', () => {
-            let modelObject = {
+            let myObject = {
                 save: function() { return Promise.resolve(); },
                 test1: function() {}
             };
 
-            Object.keys(_hooks).forEach((k) => {
-                modelObject[k] = _hooks[k];
-            });
+            hooks.wrap(myObject);
 
-            spyOriginalMethod = sinon.spy(modelObject, 'save');
-            modelObject.post('save', spies.postHook1);
-            modelObject.post('save', spies.postHook2);
+            spyOriginalMethod = sinon.spy(myObject, 'save');
+            myObject.post('save', spies.postHook1);
+            myObject.post('save', spies.postHook2);
 
-            return modelObject.save().then(() => {
+            return myObject.save().then(() => {
                 sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
             });
         });

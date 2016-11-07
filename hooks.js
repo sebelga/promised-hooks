@@ -4,7 +4,14 @@
 const is = require('is');
 
 class HooksPromise {
-    hook(name, originalMethod) {
+    static wrap(scope) {
+        scope.pre = this.pre;
+        scope.post = this.post;
+        scope.hook = this.hook;
+        scope.__setupHooks = this.__setupHooks
+    };
+
+    static hook(name, originalMethod) {
             let proto = this.__proto__;
             if (!proto.hasOwnProperty(name)) {
                 proto = this;
@@ -125,39 +132,39 @@ class HooksPromise {
             return this;
     }
 
-    pre(name, fn) {
+    static pre(name, fn) {
         let proto = this.__proto__;
         if (!proto.hasOwnProperty(name)) {
             proto = this;
         }
         const pres = proto.__pres = proto.__pres || {};
 
-        this._lazySetupHooks(proto, name);
+        this.__setupHooks(proto, name);
 
         pres[name].push(fn);
 
         return this;
     }
 
-    post(name, fn) {
+    static post(name, fn) {
         let proto = this.__proto__;
         if (!proto.hasOwnProperty(name)) {
             proto = this;
         }
         const posts = proto.__posts = proto.__posts || {};
 
-        this._lazySetupHooks(proto, name);
+        this.__setupHooks(proto, name);
 
         posts[name].push(fn);
 
         return this;
     }
 
-    _lazySetupHooks(proto, methodName) {
+    static __setupHooks(proto, methodName) {
         if (proto[methodName].__hooked !== true) {
             this.hook(methodName, proto[methodName]);
         }
     }
 }
 
-module.exports = new HooksPromise();
+module.exports = HooksPromise;
