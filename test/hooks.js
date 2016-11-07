@@ -6,15 +6,12 @@ const sinon = require('sinon');
 require('sinon-as-promised');
 
 const hooks = require('../index');
-const Model = require('../mocks/model.mock');
+const mocks = require('../mocks/model.mock');
+const Model = mocks.MyClass;
+const Model2 = mocks.MyOtherClass;
 
 describe('hooks-promise', () => {
     let model;
-
-    beforeEach(() => {
-        model = new Model();
-        hooks.wrap(model);
-    });
 
     describe('pre()', () => {
         let spyPre1, spyPre2, spyOriginalMethod;
@@ -33,6 +30,10 @@ describe('hooks-promise', () => {
         };
 
         beforeEach(() => {
+            model = new Model();
+            hooks.wrap(model);
+            model.__proto__.__pres = {};
+
             spyPre1 = sinon.spy(spies, 'preHook1');
             spyPre2 = sinon.spy(spies, 'preHook2');
             spyOriginalMethod = sinon.spy(model.__proto__, 'save');
@@ -67,9 +68,6 @@ describe('hooks-promise', () => {
             return model.save().catch((err) => {
                 expect(err).equal(error);
                 expect(spyOriginalMethod.called).be.false;
-
-                // Remove this last preHook1 (to stop throwing error);
-                model.__proto__.__pres.save.pop();
             });
         });
 
@@ -124,6 +122,10 @@ describe('hooks-promise', () => {
         };
 
         beforeEach(() => {
+            model = new Model();
+            hooks.wrap(model);
+            model.__proto__.__posts = {save: []};
+
             spyPost1 = sinon.spy(spies, 'postHook1');
             spyPost2 = sinon.spy(spies, 'postHook2');
             spyOriginalMethod = sinon.spy(model.__proto__, 'save');
@@ -162,7 +164,44 @@ describe('hooks-promise', () => {
             });
 
             return model.save().then((response) => {
-                expect(response).deep.equal('5678');
+                expect(response).equal('5678');
+            });
+        });
+
+        it('should not reject promise on error', () => {
+            model.post('save', function() {
+                return Promise.reject({ code:500 });
+            });
+
+            model.post('save', function(data) {
+                return Promise.resolve(data);
+            });
+
+            return model.save().then((response) => {
+                expect(response).deep.equal({
+                    result: '1234',
+                    errorsPostHook: [{code: 500}]
+                });
+            });
+        });
+
+        it('should not create object if response is already one', () => {
+            let model = new Model2();
+            hooks.wrap(model);
+
+            model.post('save', function() {
+                return Promise.reject({ code:500 });
+            });
+
+            model.post('save', function(data) {
+                return Promise.resolve(data);
+            });
+
+            return model.save().then((response) => {
+                expect(response).deep.equal({
+                    data: [1, 2, 3],
+                    errorsPostHook: [{code: 500}]
+                });
             });
         });
 

@@ -105,7 +105,20 @@ class HooksPromise {
                                 let currPost = posts[currentPost];
 
                                 // Call next "post" hook
-                                return currPost.call(self, data).then(next, handleError);
+                                return currPost.call(self, data).then(next, (err) => {
+                                    // we convert response to object
+                                    if(!is.object(data)) {
+                                        data = {
+                                            result: data
+                                        };
+                                    }
+
+                                    // create errors Array
+                                    data.errorsPostHook = data.errorsPostHook || [];
+                                    data.errorsPostHook.push(err);
+
+                                    return next(data);
+                                });
                             } else {
                                 // Resolve... we're done! :)
                                 return resolve(data);
