@@ -21,8 +21,6 @@ class HooksPromise {
                 const passedArgs = Array.prototype.slice.apply(arguments);
                 const self = this;
 
-                const lastArg = arguments[arguments.length-1];
-
                 /**
                  * Array or pre hooks
                  */
@@ -47,11 +45,6 @@ class HooksPromise {
                  * arguments eventually passed to the hook - are mutable
                  */
                 let hookArgs;
-
-                /**
-                 * Total async method still to execute
-                 */
-                let asyncsLeft = proto[name].__numAsyncPres;
 
                 return new Promise(function(resolve, reject) {
 
@@ -92,34 +85,28 @@ class HooksPromise {
                             args = args[0];
                         }
 
-                        let response;
-                        let totalPost = posts.length;
+                        const totalPost = posts.length;
                         let currentPost = -1;
-                        let postArgs;
 
-
-                        let next = function (response) {
-                            /**
-                             * Reference to current post hook
-                             */
-                            let currPost;
-                            let postArgs;
-
+                        let next = function (data) {
                             if (++currentPost < totalPost) {
-                                currPost = posts[currentPost];
+                                /**
+                                 * Reference to current post hook
+                                 */
+                                let currPost = posts[currentPost];
 
                                 // Call next "post" hook
-                                return currPost.call(self, response).then(next, handleError);
+                                return currPost.call(self, data).then(next, handleError);
                             } else {
                                 // Resolve... we're done! :)
-                                return resolve(response);
+                                return resolve(data);
                             }
                         };
 
                         // We execute the actual (original) method
-                        response = originalMethod.apply(self, args);
+                        const response = originalMethod.apply(self, args);
 
-                        // We either return a 'post' hook
+                        // If there are post hooks, we chain the response with the hook
                         if (totalPost > 0) {
                             return response.then(next, handleError);
                         }
