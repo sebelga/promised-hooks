@@ -87,7 +87,9 @@ class HooksPromise {
                         return done.apply(self, hookArgs);
                     }
 
-                    const done = function (...args) {
+                    const done = function () {
+                        const args = Array.prototype.slice.apply(arguments);
+
                         if (is.array(args[0]) && args.length === 1) {
                             args = args[0];
                         }
