@@ -17,7 +17,8 @@ class HooksPromise {
             posts[name] = posts[name] || [];
 
             // We wrapp the original method with he hooked logig
-            proto[name] = function(...passedArgs) {
+            proto[name] = function() {
+                const passedArgs = Array.prototype.slice.apply(arguments);
                 const self = this;
 
                 const lastArg = arguments[arguments.length-1];
@@ -64,7 +65,9 @@ class HooksPromise {
                     /**
                      * Middleware (hook) wrapper
                      */
-                    const next = function (...args) {
+                    const next = function () {
+                        const args = Array.prototype.slice.apply(arguments);
+
                         /**
                          * Reference to current pre hook
                          */

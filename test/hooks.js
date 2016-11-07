@@ -32,6 +32,7 @@ describe('hooks-promise', () => {
 
         let spies = {
             preHook1: function() {
+                this.newValue = 123;
                 return Promise.resolve();
             },
             preHook2: function() {
@@ -57,6 +58,12 @@ describe('hooks-promise', () => {
         it('should execute pre hooks in correct order', () => {
             return model.save().then(() => {
                 sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
+            });
+        });
+
+        it('should pass the correct scope to the hook', () => {
+            return model.save().then(() => {
+                expect(model.newValue).equal(123);
             });
         });
 
@@ -118,6 +125,7 @@ describe('hooks-promise', () => {
 
         let spies = {
             postHook1: function(result) {
+                this.newValue = 456;
                 return Promise.resolve(result);
             },
             postHook2: function(result) {
@@ -143,6 +151,12 @@ describe('hooks-promise', () => {
         it('should execute posts hooks in correct order', () => {
             return model.save().then(() => {
                 sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
+            });
+        });
+
+        it('should pass the correct scope to the hook', () => {
+            return model.save().then(() => {
+                expect(model.newValue).equal(456);
             });
         });
 
