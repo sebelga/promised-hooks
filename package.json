@@ -4,7 +4,7 @@
   "description": "Hooks functionality for methods returning a Promise",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint ./lib && eslint ./test",
+    "lint": "eslint hooks.js && eslint test/",
     "pretest": "npm run lint",
     "test": "mocha test --recursive",
     "coverage": "istanbul cover _mocha -- -R spec --recursive",

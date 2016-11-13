@@ -34,7 +34,6 @@ describe('hooks-promise', () => {
         beforeEach(() => {
             model = new Model();
             hooks.wrap(model);
-            model.__pres = {};
 
             spyPre1 = sinon.spy(spies, 'preHook1');
             spyPre2 = sinon.spy(spies, 'preHook2');
@@ -53,6 +52,14 @@ describe('hooks-promise', () => {
         it('should execute pre hooks in correct order', () => model.save().then(() => {
             sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
         }));
+
+        // it.only('should allow an Array of middleware', () => {
+        //     model = new Model();
+        //     hooks.wrap(model);
+        //     return model.save().then(() => {
+        //         sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
+        //     });
+        // });
 
         it('should pass the correct scope to the hook', () => model.save().then(() => {
             expect(model.newValue).equal(123);
@@ -124,7 +131,6 @@ describe('hooks-promise', () => {
         beforeEach(() => {
             model = new Model();
             hooks.wrap(model);
-            // model.__posts = { save: [] };
 
             spyPost1 = sinon.spy(spies, 'postHook1');
             spyPost2 = sinon.spy(spies, 'postHook2');
