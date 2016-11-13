@@ -29,12 +29,12 @@ class HooksPromise {
             /**
              * Array or pre hooks
              */
-            const pres = this.__pres[name] || this.prototype.__pres[name];
+            const pres = this.__pres[name];
 
             /**
              * Array of post hooks
              */
-            const posts = this.__posts[name] || this.prototype.__posts[name];
+            const posts = this.__posts[name];
 
             /**
              * Total pre hooks
@@ -119,8 +119,7 @@ class HooksPromise {
             function done() {
                 const args = Array.prototype.slice.apply(arguments);
 
-                resolveFn = resolveFn || Promise.resolve;
-                rejectFn = rejectFn || Promise.reject;
+                resolveFn = resolveFn || function resolve(data) { return Promise.resolve(data); };
 
                 let currentPost = -1;
 
@@ -154,7 +153,11 @@ class HooksPromise {
                 };
 
                 // We execute the actual (original) method
-                const response = originalMethod.apply(self, args);
+                let response = originalMethod.apply(self, args);
+
+                if (response.constructor.name !== 'Promise') {
+                    response = Promise.resolve();
+                }
 
                 // If there are post hooks, we chain the response with the hook
                 if (totalPost > 0) {
@@ -162,10 +165,6 @@ class HooksPromise {
                 }
 
                 // no "post" hook, we're done!
-                if (response === true) {
-                    return response;
-                }
-
                 return response.then(resolveFn, rejectFn);
             }
         };

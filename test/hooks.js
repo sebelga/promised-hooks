@@ -114,6 +114,38 @@ describe('hooks-promise', () => {
                 sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
             });
         });
+
+        it('bypass middleware(s)', () => {
+            model.preHooksEnabled = false;
+            return model.save('abc', 123).then(() => {
+                expect(spyPre1.called).equal(false);
+            });
+        });
+
+        it('bypass middleware(s) and catch post hook errors', () => {
+            const e = { code: 501 };
+            model.preHooksEnabled = false;
+            model.post('save', () => Promise.reject(e));
+            return model.save('abc', 123).then((data) => {
+                expect(data.errorsPostHook[0]).equal(e);
+            });
+        });
+
+        it('override the middleware scope', () => {
+            const obj = { x: 1 };
+            model = new Model();
+            model.__scopeHook = function setScope() {
+                return obj;
+            };
+            hooks.wrap(model);
+
+            model.pre('save', function preHook() {
+                expect(this).equal(obj);
+                return Promise.resolve();
+            });
+
+            return model.save();
+        });
     });
 
     describe('post()', () => {
@@ -223,6 +255,20 @@ describe('hooks-promise', () => {
 
             return myObject.save().then(() => {
                 sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
+            });
+        });
+
+        it('should convert original to Promise', () => {
+            model = new Model();
+            const spy = { original: () => true };
+            const spyOriginal = sinon.spy(spy, 'original');
+            sinon.stub(model, 'save', () => spy.original());
+
+            hooks.wrap(model);
+            model.post('save', [spyPost1, spyPost2]);
+
+            return model.save().then(() => {
+                sinon.assert.callOrder(spyOriginal, spyPost1, spyPost2);
             });
         });
     });
