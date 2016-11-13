@@ -87,7 +87,11 @@ class HooksPromise {
                      * Middleware (hook) wrapper
                      */
                     const next = function () {
-                        const args = Array.prototype.slice.apply(arguments);
+                        let args = Array.prototype.slice.apply(arguments);
+
+                        if (is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override')) {
+                            args = arrify(args[0].__override);
+                        }
 
                         // If there is a __scopeHook function on the object
                         // we call it to get the scope wanted for the hook
@@ -117,7 +121,7 @@ class HooksPromise {
                 });
 
                 function done () {
-                    let args = Array.prototype.slice.apply(arguments);
+                    const args = Array.prototype.slice.apply(arguments);
                     // let callback;
 
                     // if (args.length > 0) {
@@ -130,10 +134,6 @@ class HooksPromise {
 
                     resolveFn = resolveFn || Promise.resolve;
                     rejectFn = rejectFn || Promise.reject;
-
-                    if (is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override')) {
-                        args = arrify(args[0].__override);
-                    }
 
                     let currentPost = -1;
 
