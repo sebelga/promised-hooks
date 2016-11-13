@@ -53,13 +53,16 @@ describe('hooks-promise', () => {
             sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
         }));
 
-        // it.only('should allow an Array of middleware', () => {
-        //     model = new Model();
-        //     hooks.wrap(model);
-        //     return model.save().then(() => {
-        //         sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
-        //     });
-        // });
+        it('should allow an Array of middleware', () => {
+            model = new Model();
+            hooks.wrap(model);
+            spyOriginalMethod = sinon.spy(model, 'save');
+            model.pre('save', [spies.preHook1, spies.preHook2]);
+
+            return model.save().then(() => {
+                sinon.assert.callOrder(spyPre1, spyPre2, spyOriginalMethod);
+            });
+        });
 
         it('should pass the correct scope to the hook', () => model.save().then(() => {
             expect(model.newValue).equal(123);
@@ -149,6 +152,17 @@ describe('hooks-promise', () => {
         it('should execute posts hooks in correct order', () => model.save().then(() => {
             sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
         }));
+
+        it('should allow an Array of middleware', () => {
+            model = new Model();
+            hooks.wrap(model);
+            spyOriginalMethod = sinon.spy(model, 'save');
+            model.post('save', [spyPost1, spyPost2]);
+
+            return model.save().then(() => {
+                sinon.assert.callOrder(spyOriginalMethod, spyPost1, spyPost2);
+            });
+        });
 
         it('should pass the correct scope to the hook', () => model.save().then(() => {
             expect(model.newValue).equal(456);

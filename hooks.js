@@ -179,6 +179,12 @@ class HooksPromise {
     static pre(name, fn) {
         const proto = this;
 
+        if (is.array(fn)) {
+            return fn.forEach((middleware) => {
+                proto.pre.call(proto, name, middleware);
+            });
+        }
+
         const pres = proto.__pres = proto.__pres || {};
 
         proto.__setupHooks(proto, name);
@@ -190,6 +196,12 @@ class HooksPromise {
 
     static post(name, fn) {
         const proto = this;
+
+        if (is.array(fn)) {
+            return fn.forEach((middleware) => {
+                proto.post.call(proto, name, middleware);
+            });
+        }
 
         const posts = proto.__posts = proto.__posts || {};
 
