@@ -32,11 +32,11 @@ describe('hooks-promise', () => {
         beforeEach(() => {
             model = new Model();
             hooks.wrap(model);
-            model.__proto__.__pres = {};
+            model.__pres = {};
 
             spyPre1 = sinon.spy(spies, 'preHook1');
             spyPre2 = sinon.spy(spies, 'preHook2');
-            spyOriginalMethod = sinon.spy(model.__proto__, 'save');
+            spyOriginalMethod = sinon.spy(model, 'save');
 
             model.pre('save', spies.preHook1);
             model.pre('save', spies.preHook2);
@@ -80,10 +80,19 @@ describe('hooks-promise', () => {
 
         it('preHook resolve should override original parameter passed', () => {
             model.pre('save', function() {
-                return Promise.resolve(['newParam1', 'newParam2']);
+                return Promise.resolve({__override: ['newParam1', 'newParam2']});
             });
             return model.save(123, 'abc').then(() => {
                 expect(spyOriginalMethod.getCall(0).args).deep.equal(['newParam1', 'newParam2']);
+            });
+        });
+
+        it('preHook resolve should override original parameter passed (single)', () => {
+            model.pre('save', function() {
+                return Promise.resolve({__override: 'newParam1'});
+            });
+            return model.save(123, 'abc').then(() => {
+                expect(spyOriginalMethod.getCall(0).args).deep.equal(['newParam1']);
             });
         });
 
