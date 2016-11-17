@@ -32,7 +32,9 @@ User.prototype.someMethod = function someMethod() { ... }
 // wrap it!
 hooks.wrap(User);
 
+// -------
 // Object
+// -------
 var api = {
 	save: function() { ... }
 };
