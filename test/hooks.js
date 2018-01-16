@@ -84,6 +84,13 @@ describe('hooks-promise', () => {
             });
         });
 
+        it('preHook resolve should **not** override original parameter passed', () => {
+            model.pre('save', () => Promise.resolve({ abc: 123 }));
+            return model.save({ abc: 777 }).then(() => {
+                expect(spyOriginalMethod.getCall(0).args[0].abc).equal(777);
+            });
+        });
+
         it('preHook resolve should override original parameter passed', () => {
             model.pre('save', () => Promise.resolve({ __override: ['newParam1', 'newParam2'] }));
             return model.save(123, 'abc').then(() => {

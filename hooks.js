@@ -52,6 +52,12 @@ class HooksPromise {
             let scope;
 
             /**
+             * If the current hook is overwriting the arguments
+             * of the original method
+             */
+            let overwrite = false;
+
+            /**
              * Current hook being processed
              */
             let currentPre = -1;
@@ -87,6 +93,7 @@ class HooksPromise {
 
                     if (is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override')) {
                         args = arrify(args[0].__override);
+                        overwrite = true;
                     }
 
                     // If there is a __scopeHook function on the object
@@ -98,9 +105,7 @@ class HooksPromise {
                      */
                     let currentHook;
 
-                    if (args && args.length && typeof args[0] !== 'undefined') {
-                        hookArgs = args;
-                    }
+                    hookArgs = overwrite ? args : passedArgs;
 
                     if (currentPre + 1 < totalPres) {
                         currentPre += 1;

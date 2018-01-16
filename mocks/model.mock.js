@@ -1,22 +1,18 @@
 'use strict';
 
-class MyClass{
+class MyClass {
     save() {
-        return new Promise((resolve, reject) => {
-            resolve('1234');
-        });
+        return Promise.resolve('1234');
     }
-};
+}
 
-class MyOtherClass{
+class MyOtherClass {
     save() {
-        return new Promise((resolve, reject) => {
-            resolve({ data: [1, 2, 3] });
-        });
+        return Promise.resolve({ data: [1, 2, 3] });
     }
-};
+}
 
 module.exports = {
     MyClass,
-    MyOtherClass
+    MyOtherClass,
 };
