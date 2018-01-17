@@ -91,7 +91,7 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('preHook resolve should override original parameter passed', () => {
+        it('preHook resolve should override original parameter passed (multi)', () => {
             model.pre('save', () => Promise.resolve({ __override: ['newParam1', 'newParam2'] }));
             return model.save(123, 'abc').then(() => {
                 expect(spyOriginalMethod.getCall(0).args).deep.equal(['newParam1', 'newParam2']);
@@ -211,8 +211,16 @@ describe('hooks-promise', () => {
             expect(response).equal('1234');
         }));
 
-        it('should override original resolve in post hooks', () => {
+        it('should **not** override original resolve in post hooks', () => {
             model.post('save', () => Promise.resolve('5678'));
+
+            return model.save().then((response) => {
+                expect(response).equal('1234');
+            });
+        });
+
+        it('should override original resolve in post hooks', () => {
+            model.post('save', () => Promise.resolve({ __override: '5678' }));
 
             return model.save().then((response) => {
                 expect(response).equal('5678');
@@ -248,6 +256,38 @@ describe('hooks-promise', () => {
             });
         });
 
+        it('should override response (1)', () => {
+            model = new Model();
+            hooks.wrap(model);
+
+            model.post('save', () => Promise.reject({ code: 500 }));
+
+            model.post('save', () => Promise.resolve({ __override: 'new response' }));
+
+            return model.save().then((response) => {
+                expect(response).deep.equal({
+                    result: 'new response',
+                    errorsPostHook: [{ code: 500 }],
+                });
+            });
+        });
+
+        it('should override response (2)', () => {
+            model = new Model();
+            hooks.wrap(model);
+
+            model.post('save', () => Promise.resolve({ __override: { abc: 123 } }));
+            model.post('save', () => Promise.reject({ code: 500 }));
+            model.post('save', () => Promise.resolve({ __override: { abc: 456 } }));
+
+            return model.save().then((response) => {
+                expect(response).deep.equal({
+                    abc: 456,
+                    errorsPostHook: [{ code: 500 }],
+                });
+            });
+        });
+
         it('should work with methods from an object', () => {
             const myObject = {
                 save() { return Promise.resolve(); },
@@ -265,7 +305,7 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('should convert original to Promise', () => {
+        it('should convert original target method response to a Promise', () => {
             model = new Model();
             const spy = { original: () => true };
             const spyOriginal = sinon.spy(spy, 'original');

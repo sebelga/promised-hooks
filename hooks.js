@@ -55,7 +55,7 @@ class HooksPromise {
              * If the current hook is overwriting the arguments
              * of the original method
              */
-            let overwrite = false;
+            let override = false;
 
             /**
              * Current hook being processed
@@ -88,12 +88,12 @@ class HooksPromise {
                 /**
                  * Middleware (hook) wrapper
                  */
-                const next = function next() {
+                const nextPreHook = function nextPreHook() {
                     let args = Array.prototype.slice.apply(arguments);
 
                     if (is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override')) {
                         args = arrify(args[0].__override);
-                        overwrite = true;
+                        override = true;
                     }
 
                     // If there is a __scopeHook function on the object
@@ -105,30 +105,64 @@ class HooksPromise {
                      */
                     let currentHook;
 
-                    hookArgs = overwrite ? args : passedArgs;
+                    hookArgs = override ? args : passedArgs;
 
                     if (currentPre + 1 < totalPres) {
                         currentPre += 1;
                         currentHook = pres[currentPre];
 
-                        return currentHook.apply(scope, hookArgs).then(next, handleError);
+                        return currentHook.apply(scope, hookArgs).then(nextPreHook, handleError);
                     }
 
-                    // hookArgs.push(resolve);
                     return done.apply(scope, hookArgs);
                 };
 
-                return next.apply(this, passedArgs);
+                return nextPreHook.apply(this, passedArgs);
             });
 
             function done() {
-                const args = Array.prototype.slice.apply(arguments);
+                let args = Array.prototype.slice.apply(arguments);
 
                 resolveFn = resolveFn || function resolve(data) { return Promise.resolve(data); };
 
                 let currentPost = -1;
 
-                const next = function next(data) {
+                // We execute the actual (target) method
+                // and save the response
+                let targetMethodResponse = originalMethod.apply(self, args);
+                let responsePromised = targetMethodResponse;
+
+                // If the response from the target method is not a promise
+                // we convert it to a Promise
+                if (responsePromised.constructor.name !== 'Promise') {
+                    responsePromised = Promise.resolve(targetMethodResponse);
+                }
+
+                const nextPostHook = function nextPostHook() {
+                    args = Array.prototype.slice.apply(arguments)[0];
+
+                    if (is.object(args) && {}.hasOwnProperty.call(args, '__override')) {
+                        override = true;
+
+                        if (is.object(targetMethodResponse) &&
+                            {}.hasOwnProperty.call(targetMethodResponse, '__override') &&
+                            {}.hasOwnProperty.call(targetMethodResponse.__override, 'errorsPostHook')) {
+                            // The response has already been overriden
+
+                            if (is.object(args.__override)) {
+                                args.__override.errorsPostHook = targetMethodResponse.__override.errorsPostHook;
+                            } else {
+                                args.__override = {
+                                    result: args.__override,
+                                    errorsPostHook: targetMethodResponse.__override.errorsPostHook,
+                                };
+                            }
+                        }
+                    }
+
+                    hookArgs = override ? args : targetMethodResponse;
+                    targetMethodResponse = hookArgs;
+
                     if (currentPost + 1 < totalPost && self.__hooksEnabled !== false) {
                         currentPost += 1;
                         /**
@@ -136,41 +170,48 @@ class HooksPromise {
                          */
                         const currPost = posts[currentPost];
 
-                        // Call next "post" hook
-                        return currPost.call(scope, data).then(next, (err) => {
-                            // we convert response to object
+                        // Call nextPostHook
+                        return currPost.call(scope, hookArgs).then(nextPostHook, (err) => {
+                            // ----------------------------
+                            // Error handling
+                            // ----------------------------
+                            let data = args;
+
                             if (!is.object(data)) {
+                                // convert response to object
                                 data = {
-                                    result: data,
+                                    __override: {
+                                        result: data,
+                                    },
+                                };
+                            } else if (!{}.hasOwnProperty.call(data, '__override')) {
+                                data = {
+                                    __override: data,
                                 };
                             }
 
                             // create errors Array
-                            data.errorsPostHook = data.errorsPostHook || [];
-                            data.errorsPostHook.push(err);
+                            data.__override.errorsPostHook = data.errorsPostHook || [];
+                            data.__override.errorsPostHook.push(err);
 
-                            return next(data);
+                            return nextPostHook(data);
                         });
                     }
 
                     // Resolve... we're done! :)
-                    return resolveFn(data);
+                    if (is.object(hookArgs) && {}.hasOwnProperty.call(hookArgs, '__override')) {
+                        hookArgs = hookArgs.__override;
+                    }
+                    return resolveFn(hookArgs);
                 };
-
-                // We execute the actual (original) method
-                let response = originalMethod.apply(self, args);
-
-                if (response.constructor.name !== 'Promise') {
-                    response = Promise.resolve();
-                }
 
                 // If there are post hooks, we chain the response with the hook
                 if (totalPost > 0) {
-                    return response.then(next, rejectFn);
+                    return responsePromised.then(nextPostHook, rejectFn);
                 }
 
                 // no "post" hook, we're done!
-                return response.then(resolveFn, rejectFn);
+                return responsePromised.then(resolveFn, rejectFn);
             }
         };
 
