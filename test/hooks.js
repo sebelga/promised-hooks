@@ -86,7 +86,8 @@ describe('hooks-promise', () => {
 
         it('preHook resolve should **not** override original parameter passed', () => {
             model.pre('save', () => Promise.resolve({ abc: 123 }));
-            return model.save({ abc: 777 }).then(() => {
+            return model.save({ abc: 777 }).then((response) => {
+                expect(response).equal('1234');
                 expect(spyOriginalMethod.getCall(0).args[0].abc).equal(777);
             });
         });
@@ -207,14 +208,16 @@ describe('hooks-promise', () => {
             expect(model.newValue).equal(456);
         }));
 
-        it('should pass resolve value from originalMethod response', () => model.save().then((response) => {
-            expect(response).equal('1234');
-        }));
+        it('should pass resolve value from originalMethod response', () => (
+            model.save().then((response) => {
+                expect(response).equal('1234');
+            })
+        ));
 
         it('should **not** override original resolve in post hooks', () => {
-            model.post('save', () => Promise.resolve('5678'));
+            model.post('savePromise', () => Promise.resolve('5678'));
 
-            return model.save().then((response) => {
+            return model.savePromise().then((response) => {
                 expect(response).equal('1234');
             });
         });
