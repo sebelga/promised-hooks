@@ -125,30 +125,26 @@ class HooksPromise {
 
                 resolveFn = resolveFn || function resolve(data) { return Promise.resolve(data); };
 
+                let targetMethodResponse;
                 let currentPost = -1;
 
-                // We execute the actual (target) method
-                // and save the response
-                let targetMethodResponse = originalMethod.apply(self, targetMethodArgs);
-                let responsePromised = targetMethodResponse;
+                const nextPostHook = function nextPostHook(res) {
+                    // we save the target method response
+                    targetMethodResponse = targetMethodResponse || res;
 
-                // If the response from the target method is not a promise
-                // we convert it to a Promise
-                if (responsePromised.constructor.name !== 'Promise') {
-                    responsePromised = Promise.resolve(targetMethodResponse);
-                }
-
-                const nextPostHook = function nextPostHook(_arg) {
-                    const { arg, override } = parsePostArgs(_arg, targetMethodResponse);
+                    const { arg, override } = parsePostArgs(res, targetMethodResponse);
                     const hookArg = override ? arg : targetMethodResponse;
 
                     targetMethodResponse = hookArg;
 
                     if (currentPost + 1 < totalPost && self.__hooksEnabled !== false) {
-                        currentPost += 1;
                         /**
-                         * Reference to current post hook
+                         * Recursively call all the post hooks
                          */
+
+                        currentPost += 1;
+
+                        // Reference to current post hook
                         const currPost = posts[currentPost];
 
                         // Call nextPostHook
@@ -156,27 +152,39 @@ class HooksPromise {
                             // ----------------------------
                             // Error handling
                             // ----------------------------
-                            const res = {
+                            const resOverride = {
                                 __override: {
                                     result: arg,
                                 },
                             };
-                            // create errors Array
-                            res.__override.errorsPostHook = res.errorsPostHook || [];
-                            res.__override.errorsPostHook.push(err);
 
-                            return nextPostHook(res);
+                            // create errors Array
+                            resOverride.__override.errorsPostHook = resOverride.errorsPostHook || [];
+                            resOverride.__override.errorsPostHook.push(err);
+
+                            return nextPostHook(resOverride);
                         });
                     }
 
                     // Resolve... we're done! :)
 
                     let resolveResponse = hookArg;
+
                     if (is.object(hookArg) && {}.hasOwnProperty.call(hookArg, '__override')) {
                         resolveResponse = hookArg.__override;
                     }
+
                     return resolveFn(resolveResponse);
                 };
+
+                // We execute the actual (target) method
+                let responsePromised = originalMethod.apply(self, targetMethodArgs);
+
+                if (responsePromised.constructor.name !== 'Promise') {
+                    // If the response from the target method is not a promise
+                    // we convert it to a Promise
+                    responsePromised = Promise.resolve(responsePromised);
+                }
 
                 // If there are post hooks, we chain the response with the hook
                 if (totalPost > 0) {
