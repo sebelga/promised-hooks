@@ -68,13 +68,10 @@ function doSometingBeforeSaving()  {
 	// Access arguments passed
 	const args = Array.prototype.slice.apply(arguments);
 
-	// You could modify/validate them and pass them back in the resolve()
-	// ...
-
-	// must return a Promise
+	// return a Promise
 	return new Promise((resolve, reject) => {
 
-		// ... do some cool stuff then
+		// ... do some async stuff
 		resolve(); // or reject()
 	});
 }
@@ -89,16 +86,15 @@ User.pre('save', doSometingBeforeSaving);
 
 function doSometingBeforeSaving()  {
 	return new Promise((resolve, reject) => {
-        // call some api or any async stuff
         // ...
 
         resolve({ __override: 123 }); // single argument
         // or
-        resolve({ __override: [ 123, 'something else' ] }); // multi arguments
+        resolve({ __override: [ 123, 'arg2' ] }); // multi arguments
     });
 
     /**
-     * With the above override, the User.save() method will then
+     * With the above override, the User.save() method will
      * receive those arguments instead of the one originally provided
      */
 }
@@ -106,7 +102,7 @@ function doSometingBeforeSaving()  {
 ```
 
 ### post() method
-Adds a middelware to be executed when the method you are targetting is **resolved**. If the post middleware fails and rejects the Promise, the original Promise still resolves but the response is converted to an object with 2 properties.  
+Adds a middelware to be executed **after** the method you are targetting is **resolved**. If the post middleware fails and rejects the Promise, the original Promise still resolves but the response is converted to an object with 2 properties.  
 
 - result (the result from the targeted method)
 - errorsPostHook <Array> (an array with the errors from any "post" middleware)
@@ -140,13 +136,13 @@ function postMiddleware1(data) {
 
 function postMiddleware2(data) {
     return new Promise((resolve, reject) => {
-    	// do something async stuff
+    	// call async service
     	myApi.doSomething((err) => {
 			if (err) {
 				/* if the async fails you would then reject your promise.
 				 * The original response (data) will *not* be overriden
 				 * but will be converted to an object with 2 properties:
-				 * {result, errorsPostHook}
+				 * { result, errorsPostHook }
 				*/
 				return reject(err);
 			}
@@ -182,9 +178,9 @@ hooks.wrap(User);
 // Hash a user password before saving
 User.pre('save', (userData) => {
 	/**
-	 * INFO: If you want to access the User class from this middelware
+	 * INFO: If you need to access the User class from this middelware
 	 * you can not use an arrow function as the scope is lost.
-	 * Just use a normal function and *this* will be your Class
+	 * Use a normal function and *this* will be your Class
 	*/
 
 	if (typeof userData.password !== 'undefined') {

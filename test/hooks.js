@@ -240,7 +240,7 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('should not create object if response is already one', () => {
+        it('should create object, even if the response is already one', () => {
             model = new Model2();
             hooks.wrap(model);
 
@@ -250,7 +250,7 @@ describe('hooks-promise', () => {
 
             return model.save().then((response) => {
                 expect(response).deep.equal({
-                    data: [1, 2, 3],
+                    result: { data: [1, 2, 3] },
                     errorsPostHook: [{ code: 500 }],
                 });
             });
