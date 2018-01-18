@@ -52,6 +52,8 @@ All the parameters sent to the original methods are available in the arguments o
 
 
 ```js
+const hooks = require('promised-hooks');
+
 class User {
 	// instance methods
 	save() { ... }
@@ -60,19 +62,23 @@ class User {
 	static otherMethod() { ... }
 }
 
+hooks.wrap(User);
+
 User.pre('save', doSometingBeforeSaving);
 
 function doSometingBeforeSaving()  {
-	// the scope (this) is the original Object wrapped
-
-	// Access arguments passed
+	// Retrieve the arguments passed is needed
 	const args = Array.prototype.slice.apply(arguments);
+
+	// the scope (this) is the original Object wrapped
 
 	// return a Promise
 	return new Promise((resolve, reject) => {
 
 		// ... do some async stuff
-		resolve(); // or reject()
+
+		// then resolve or reject
+		resolve();
 	});
 }
 
@@ -110,6 +116,8 @@ Adds a middelware to be executed **after** the method you are targetting is **re
 If you resolve your post middelware with an object containing an "__override" property (same as with "pre" hook), it **will override** the original response.
 
 ```js
+const hooks = require('promised-hooks');
+
 class User {
 	// instance methods
 	save() { ... }
@@ -118,19 +126,20 @@ class User {
 	static otherMethod() { ... }
 }
 
+hooks.wrap(User);
+
 User.post('save', postMiddleware1);
 User.post('save', postMiddleware2);
 
 function postMiddleware1(data) {
     // data is the resolved value from the original promised method.
 
-    // do some async stuff
-    // ....
+    // do some async stuff ...
 
     // then simply return a resolve
     return Promise.resolve();
 
-    // or override the response
+    // If needed, you can override the response
     return Promise.resolve({ __override: 'my new response' });
 }
 
@@ -142,7 +151,10 @@ function postMiddleware2(data) {
 				/* if the async fails you would then reject your promise.
 				 * The original response (data) will *not* be overriden
 				 * but will be converted to an object with 2 properties:
-				 * { result, errorsPostHook }
+				 *  {
+					    result: ... // the original response
+					    errorsPostHook: [...] // array of errors from "post" hooks
+				    }
 				*/
 				return reject(err);
 			}
