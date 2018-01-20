@@ -261,13 +261,13 @@ User.pre('save', (userData) => {
     }
 });
 
-// Send an email maybe
+// Let's email our newly created user
 User.post('save', (response) => {
     // response is what the target method returns
-	const email = response.email;
+    const email = response.email;
 
-	// Return a method that returns a Promise
-	return yourMailService.sendEmail(email);
+    // Return a method that returns a Promise
+    return yourMailService.sendEmail(email);
 });
 
 // Create new user
@@ -279,7 +279,7 @@ user.save({ name: 'John', password: 'snow' })
         // Save success
 
         // Check if there are any errors in our "post" middleware
-        if (response.[hooks.ERROR]) {
+        if (response.[hooks.ERRORS]) {
             // deal with Post hook error
         }
 
