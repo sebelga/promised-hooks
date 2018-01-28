@@ -6,8 +6,8 @@ const hooks = require('../index');
 const mocks = require('../mocks/model.mock');
 
 const expect = chai.expect;
-const Model = mocks.MyClass;
-const Model2 = mocks.MyOtherClass;
+const { getModel } = mocks;
+
 require('sinon-as-promised');
 
 describe('hooks-promise', () => {
@@ -32,7 +32,7 @@ describe('hooks-promise', () => {
         };
 
         beforeEach(() => {
-            model = new Model();
+            model = getModel();
             hooks.wrap(model);
 
             spyPre1 = sinon.spy(spies, 'preHook1');
@@ -54,7 +54,7 @@ describe('hooks-promise', () => {
         }));
 
         it('should allow an Array of middleware', () => {
-            model = new Model();
+            model = getModel();
             hooks.wrap(model);
             spyOriginalMethod = sinon.spy(model, 'save');
             model.pre('save', [spies.preHook1, spies.preHook2]);
@@ -130,29 +130,44 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('bypass middleware(s) and catch post hook errors', () => {
-            const e = { code: 501 };
-            model.preHooksEnabled = false;
-            model.post('save', () => Promise.reject(e));
-            return model.save('abc', 123).then((data) => {
-                expect(data.errorsPostHook[0]).equal(e);
-            });
-        });
-
-        it('override the middleware scope', () => {
+        it('override the middleware scope and pass the hook function name', () => {
             const obj = { x: 1 };
-            model = new Model();
-            model.__scopeHook = function setScope() {
+
+            let hookMethod;
+            let hookMethod2;
+            let scope;
+
+            model = getModel();
+            model.__scopeHook = function setScope(hookName, args, _hookMethod) {
+                if (hookName === 'save') {
+                    hookMethod = _hookMethod;
+                } else if (hookName === 'delete') {
+                    hookMethod2 = _hookMethod;
+                }
+
                 return obj;
             };
             hooks.wrap(model);
 
-            model.pre('save', function preHook() {
-                expect(this).equal(obj);
+            function myPreHookMethod() {
+                scope = this;
                 return Promise.resolve();
-            });
+            }
 
-            return model.save();
+            const myPreHookMethod2 = () => Promise.resolve();
+
+            // We make sure that the hookMethod passed to __scopeHook
+            // works with both functions and arrow functions
+            model.pre('save', myPreHookMethod);
+            model.pre('delete', myPreHookMethod2);
+
+            return model.save()
+                .then(() => model.delete())
+                .then(() => {
+                    expect(scope).equal(obj);
+                    expect(hookMethod).equal('myPreHookMethod');
+                    expect(hookMethod2).equal('myPreHookMethod2');
+                });
         });
     });
 
@@ -172,7 +187,7 @@ describe('hooks-promise', () => {
         };
 
         beforeEach(() => {
-            model = new Model();
+            model = getModel();
             hooks.wrap(model);
 
             spyPost1 = sinon.spy(spies, 'postHook1');
@@ -194,7 +209,7 @@ describe('hooks-promise', () => {
         }));
 
         it('should allow an Array of middleware', () => {
-            model = new Model();
+            model = getModel();
             hooks.wrap(model);
             spyOriginalMethod = sinon.spy(model, 'save');
             model.post('save', [spyPost1, spyPost2]);
@@ -230,53 +245,46 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('should not reject promise on error', () => {
-            model.post('save', () => Promise.reject({ code: 500 }));
-
-            model.post('save', data => Promise.resolve(data));
+        it('should not reject promise on error (error in "errorsPostHook")', () => {
+            const error = { code: 500 };
+            model.post('save', () => Promise.reject(error));
 
             return model.save().then((response) => {
                 expect(response).deep.equal({
                     result: '1234',
-                    errorsPostHook: [{ code: 500 }],
                 });
+                expect(response[hooks.ERRORS][0]).equal(error);
             });
         });
 
-        it('should create object, even if the response is already one', () => {
-            model = new Model2();
-            hooks.wrap(model);
+        it('should not reject promise on error (error in Symbol)', () => {
+            const error = { code: 500 };
+            model.post('saveReturnObject', () => Promise.reject(error));
 
-            model.post('save', () => Promise.reject({ code: 500 }));
-
-            model.post('save', data => Promise.resolve(data));
-
-            return model.save().then((response) => {
-                expect(response).deep.equal({
-                    result: { data: [1, 2, 3] },
-                    errorsPostHook: [{ code: 500 }],
-                });
+            return model.saveReturnObject().then((response) => {
+                expect(response.a).equal(123);
+                expect(response[hooks.ERRORS][0]).equal(error);
             });
         });
 
         it('should override response (1)', () => {
-            model = new Model();
+            const error = { code: 500 };
+            model = getModel();
             hooks.wrap(model);
 
-            model.post('save', () => Promise.reject({ code: 500 }));
-
+            model.post('save', () => Promise.reject(error));
             model.post('save', () => Promise.resolve({ __override: 'new response' }));
 
             return model.save().then((response) => {
                 expect(response).deep.equal({
                     result: 'new response',
-                    errorsPostHook: [{ code: 500 }],
                 });
+                expect(response[hooks.ERRORS][0]).equal(error);
             });
         });
 
         it('should override response (2)', () => {
-            model = new Model();
+            model = getModel();
             hooks.wrap(model);
 
             model.post('save', () => Promise.resolve({ __override: { abc: 123 } }));
@@ -284,10 +292,8 @@ describe('hooks-promise', () => {
             model.post('save', () => Promise.resolve({ __override: { abc: 456 } }));
 
             return model.save().then((response) => {
-                expect(response).deep.equal({
-                    abc: 456,
-                    errorsPostHook: [{ code: 500 }],
-                });
+                expect(response.abc).equal(456);
+                expect(response[hooks.ERRORS][0]).deep.equal({ code: 500 });
             });
         });
 
@@ -309,7 +315,7 @@ describe('hooks-promise', () => {
         });
 
         it('should convert original target method response to a Promise', () => {
-            model = new Model();
+            model = getModel();
             const spy = { original: () => true };
             const spyOriginal = sinon.spy(spy, 'original');
             sinon.stub(model, 'save', () => spy.original());
