@@ -5,9 +5,7 @@ Add middelwares to execute **before** and **after** your Promises.
 [![npm version](https://badge.fury.io/js/promised-hooks.svg)](https://badge.fury.io/js/promised-hooks) [![Build Status](https://travis-ci.org/sebelga/promised-hooks.svg?branch=master)](https://travis-ci.org/sebelga/promised-hooks) 
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/promised-hooks/badge.svg?branch=master)](https://coveralls.io/github/sebelga/promised-hooks?branch=master)
 
-## Getting started
-
-First **install the package**
+## Install
 
 ```sh
 yarn add promised-hooks
@@ -15,29 +13,30 @@ yarn add promised-hooks
 npm install promised-hooks --save`
 ```
 
+## Warp your Class/function/object
 
-Then **wrap your Class or Object** to add hooks methods to them.
+In order to add "pre" and "post" hooks to your promise you need to wrap their containing object (Class/function/object)
 
 ```js
 const hooks = require('promised-hooks');
 
-// apply it on a Class
+// Class
 class User {
     // some method that returns a Promise
     someMethod() { ... }
 }
 
-// or the ES5 may
+// Function
 function User() {
 }
 User.prototype.someMethod = function someMethod() { ... }
 
-// ... or on an object
+// Object
 const api = {
     save: function() { ... }
 };
 
-// Then wrap it to add "pre" and "post" hooks functionalities
+// Wrap them to add "pre" and "post" hooks functionalities to their methods
 hooks.wrap(User);
 hooks.wrap(api);
 
@@ -125,11 +124,8 @@ class User {
 
 hooks.wrap(User);
 
-User.post('save', postMiddleware1);
-User.post('save', postMiddleware2);
-
-// Could also be written with an Array
-// ---> User.post('save', [postMiddleWare1, postMiddleware2])
+// Several middleware can be added at once with an Array
+User.post('save', [postMiddleware1, postMiddleware2]);
 
 function postMiddleware1(data) {
     // data is the resolved value from the original promised method
@@ -216,6 +212,47 @@ user.save().then((response) => {
     }
     ...
 });
+
+```
+
+## Scope (this)
+
+The scope (this) of the middelware is set by default on the "wrapped" object. If you need to change it at runtime, you can declare a `__scopeHook` function
+on the object that will be called for each hook. This method, when called, receives 3 parameters:
+- the hook (pre or post)
+- the arguments (array of arguments sent to the targeted method)
+- the hook method name
+
+```js
+class User {
+    save() {}
+
+    __scopeHook(hookType, args, hookMethod) {
+        console.log(hookType); // "pre"
+        console.log(args); // [123]
+        console.log(hookMethod); // "hashPassword"
+
+        // You can here return any object for the scope
+
+        if (hookMethod === 'hashPassword') {
+            return { x: 'abc' }; // set the scope
+        }
+
+        // If you return "undefined" the scope is not changed
+        return undefined;
+    }
+}
+hooks.wrap(User);
+
+User.pre('save', function hashPassword() {
+    // Check the scope
+    console.log(this); // { x: 'abc' }
+});
+
+// ...
+
+const user = new User();
+user.save(123).then( ... );
 
 ```
 

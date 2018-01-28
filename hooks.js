@@ -57,7 +57,7 @@ class HooksPromise {
             /**
              * Scope for the hooks
              */
-            let scope;
+            let scope = self;
 
             /**
              * Current hook being processed
@@ -92,12 +92,6 @@ class HooksPromise {
                     const args = Array.prototype.slice.apply(arguments);
 
                     /**
-                     * If there is a __scopeHook function on the object
-                     * we call it to get the scope wanted for the hook
-                     */
-                    scope = getScope(self, name, args);
-
-                    /**
                      * Check if the arguments contains an "__override" property
                      * that would override the arguments sent originally to the
                      * target method
@@ -114,6 +108,12 @@ class HooksPromise {
                     if (currentPre + 1 < totalPres) {
                         currentPre += 1;
                         currentHook = pres[currentPre];
+                        const hookMethod = currentHook.displayName || currentHook.name;
+                        /**
+                         * If there is a __scopeHook function on the object
+                         * we call it to get the scope wanted for the hook
+                         */
+                        scope = getScope(self, name, args, hookMethod);
 
                         /**
                          * Execute the hook and recursively call the next one
@@ -309,11 +309,11 @@ class HooksPromise {
 HooksPromise.ERRORS = ERR_KEY;
 
 // Helpers
-function getScope(self, hookName, args) {
+function getScope(self, hookName, args, hookMethod) {
     return self.__scopeHook &&
         typeof self.__scopeHook === 'function' &&
-        typeof self.__scopeHook(hookName, args) !== 'undefined' ?
-        self.__scopeHook(hookName, args) : self;
+        typeof self.__scopeHook(hookName, args, hookMethod) !== 'undefined' ?
+        self.__scopeHook(hookName, args, hookMethod) : self;
 }
 
 module.exports = HooksPromise;

@@ -132,14 +132,17 @@ describe('hooks-promise', () => {
 
         it('override the middleware scope', () => {
             const obj = { x: 1 };
+            let hookMethod;
             model = getModel();
-            model.__scopeHook = function setScope() {
+            model.__scopeHook = function setScope(hookName, args, _hookMethod) {
+                hookMethod = _hookMethod;
                 return obj;
             };
             hooks.wrap(model);
 
-            model.pre('save', function preHook() {
+            model.pre('save', function myPreHookMethod() {
                 expect(this).equal(obj);
+                expect(hookMethod).equal('myPreHookMethod');
                 return Promise.resolve();
             });
 
