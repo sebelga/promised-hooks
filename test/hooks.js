@@ -130,23 +130,44 @@ describe('hooks-promise', () => {
             });
         });
 
-        it('override the middleware scope', () => {
+        it('override the middleware scope and pass the hook function name', () => {
             const obj = { x: 1 };
+
             let hookMethod;
+            let hookMethod2;
+            let scope;
+
             model = getModel();
             model.__scopeHook = function setScope(hookName, args, _hookMethod) {
-                hookMethod = _hookMethod;
+                if (hookName === 'save') {
+                    hookMethod = _hookMethod;
+                } else if (hookName === 'delete') {
+                    hookMethod2 = _hookMethod;
+                }
+
                 return obj;
             };
             hooks.wrap(model);
 
-            model.pre('save', function myPreHookMethod() {
-                expect(this).equal(obj);
-                expect(hookMethod).equal('myPreHookMethod');
+            function myPreHookMethod() {
+                scope = this;
                 return Promise.resolve();
-            });
+            }
 
-            return model.save();
+            const myPreHookMethod2 = () => Promise.resolve();
+
+            // We make sure that the hookMethod passed to __scopeHook
+            // works with both functions and arrow functions
+            model.pre('save', myPreHookMethod);
+            model.pre('delete', myPreHookMethod2);
+
+            return model.save()
+                .then(() => model.delete())
+                .then(() => {
+                    expect(scope).equal(obj);
+                    expect(hookMethod).equal('myPreHookMethod');
+                    expect(hookMethod2).equal('myPreHookMethod2');
+                });
         });
     });
 

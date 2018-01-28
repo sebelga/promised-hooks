@@ -218,8 +218,9 @@ user.save().then((response) => {
 ## Scope (this)
 
 The scope (this) of the middelware is set by default on the "wrapped" object. If you need to change it at runtime, you can declare a `__scopeHook` function
-on the object that will be called for each hook. This method, when called, receives 3 parameters:
-- the hook (pre or post)
+on the object that will be called for each hook. This method, when called, receives 3 parameters: 
+
+- the target method
 - the arguments (array of arguments sent to the targeted method)
 - the hook method name
 
@@ -227,8 +228,8 @@ on the object that will be called for each hook. This method, when called, recei
 class User {
     save() {}
 
-    __scopeHook(hookType, args, hookMethod) {
-        console.log(hookType); // "pre"
+    __scopeHook(targetMethod, args, hookMethod) {
+        console.log(targetMethod); // "save"
         console.log(args); // [123]
         console.log(hookMethod); // "hashPassword"
 

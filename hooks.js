@@ -113,7 +113,7 @@ class HooksPromise {
                          * If there is a __scopeHook function on the object
                          * we call it to get the scope wanted for the hook
                          */
-                        scope = getScope(self, name, args, hookMethod);
+                        scope = getScope(self, name, passedArgs, hookMethod);
 
                         /**
                          * Execute the hook and recursively call the next one
@@ -311,8 +311,7 @@ HooksPromise.ERRORS = ERR_KEY;
 // Helpers
 function getScope(self, hookName, args, hookMethod) {
     return self.__scopeHook &&
-        typeof self.__scopeHook === 'function' &&
-        typeof self.__scopeHook(hookName, args, hookMethod) !== 'undefined' ?
+        typeof self.__scopeHook === 'function' ?
         self.__scopeHook(hookName, args, hookMethod) : self;
 }
 
