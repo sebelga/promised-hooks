@@ -1,11 +1,12 @@
-# Middleware "pre" & "post" hooks for Promises
-
-Add middelwares to execute **before** and **after** your Promises.
+# Middleware utility for your Promises
 
 [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![coveralls-image]][coveralls-url]
 [![Commitizen friendly][commitizen-image]][commitizen-url]  
+
+Add **pre** and **post** middleware hooks to any function returning a Promise.  
+Read [the post](https://medium.com/@sebelga/simplify-your-code-adding-hooks-to-your-promises-9e1483662dfa) on Medium for some example.
 
 <img title="code-example" src="code.png" width="85%">
 
