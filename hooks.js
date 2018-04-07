@@ -108,12 +108,12 @@ class HooksPromise {
                     if (currentPre + 1 < totalPres) {
                         currentPre += 1;
                         currentHook = pres[currentPre];
-                        const hookMethod = currentHook.displayName || currentHook.name;
+                        const hookMethod = currentHook.displayName || currentHook.name;
                         /**
                          * If there is a __scopeHook function on the object
                          * we call it to get the scope wanted for the hook
                          */
-                        scope = getScope(self, name, passedArgs, hookMethod);
+                        scope = getScope(self, name, passedArgs, hookMethod, 'pre');
 
                         /**
                          * Execute the hook and recursively call the next one
@@ -152,6 +152,8 @@ class HooksPromise {
 
                         // Reference to current post hook
                         const currPost = posts[currentPost];
+                        const hookMethod = currPost.displayName || currPost.name;
+                        scope = getScope(self, name, res, hookMethod, 'post');
 
                         // Recursively call all the "post" hooks
                         return currPost.call(scope, response).then(nextPostHook, postHookErrorHandler);
@@ -309,10 +311,21 @@ class HooksPromise {
 HooksPromise.ERRORS = ERR_KEY;
 
 // Helpers
-function getScope(self, hookName, args, hookMethod) {
+/**
+ * Set the scope (this) for the hook callback at runtime.
+ * The wrapped object/Class need to have a __scopeHook method declared that will return the scope
+ * wanted for each hook.
+ *
+ * @param {*} self Scope of the wrapped object
+ * @param {*} hookName Name of the hook (the target method on the object/class)
+ * @param {*} args The arguments passed to the target method
+ * @param {*} hookMethod The name of the callback function (if not an anonymous function of course)
+ * @param {*} hookType The hook type: "pre" or "post"
+ */
+function getScope(self, hookName, args, hookMethod, hookType) {
     return self.__scopeHook &&
         typeof self.__scopeHook === 'function' ?
-        self.__scopeHook(hookName, args, hookMethod) : self;
+        self.__scopeHook(hookName, args, hookMethod, hookType) : self;
 }
 
 module.exports = HooksPromise;

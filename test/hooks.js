@@ -5,10 +5,8 @@ const sinon = require('sinon');
 const hooks = require('../index');
 const mocks = require('../mocks/model.mock');
 
-const expect = chai.expect;
+const { expect } = chai;
 const { getModel } = mocks;
-
-require('sinon-as-promised');
 
 describe('hooks-promise', () => {
     let model;
@@ -131,26 +129,33 @@ describe('hooks-promise', () => {
         });
 
         it('override the middleware scope and pass the hook function name', () => {
-            const obj = { x: 1 };
+            const scopePre = { x: 1 };
+            const scopePost = { y: 2 };
 
-            let hookMethod;
-            let hookMethod2;
-            let scope;
+            let check1;
+            let check2;
+            let scope1;
+            let scope2;
 
             model = getModel();
-            model.__scopeHook = function setScope(hookName, args, _hookMethod) {
+            model.__scopeHook = function setScope(hookName, args, hookMethod, hookType) {
                 if (hookName === 'save') {
-                    hookMethod = _hookMethod;
-                } else if (hookName === 'delete') {
-                    hookMethod2 = _hookMethod;
+                    check1 = hookMethod;
+                } else if (hookName === 'delete' && hookType === 'pre') {
+                    check2 = hookMethod;
                 }
 
-                return obj;
+                return hookType === 'pre' ? scopePre : scopePost;
             };
             hooks.wrap(model);
 
             function myPreHookMethod() {
-                scope = this;
+                scope1 = this;
+                return Promise.resolve();
+            }
+
+            function myPostHookMethod() {
+                scope2 = this;
                 return Promise.resolve();
             }
 
@@ -160,13 +165,15 @@ describe('hooks-promise', () => {
             // works with both functions and arrow functions
             model.pre('save', myPreHookMethod);
             model.pre('delete', myPreHookMethod2);
+            model.post('delete', myPostHookMethod);
 
             return model.save()
                 .then(() => model.delete())
                 .then(() => {
-                    expect(scope).equal(obj);
-                    expect(hookMethod).equal('myPreHookMethod');
-                    expect(hookMethod2).equal('myPreHookMethod2');
+                    expect(scope1).equal(scopePre);
+                    expect(scope2).equal(scopePost);
+                    expect(check1).equal('myPreHookMethod');
+                    expect(check2).equal('myPreHookMethod2');
                 });
         });
     });
@@ -286,14 +293,16 @@ describe('hooks-promise', () => {
         it('should override response (2)', () => {
             model = getModel();
             hooks.wrap(model);
+            const err = new Error();
+            err.code = 501;
 
             model.post('save', () => Promise.resolve({ __override: { abc: 123 } }));
-            model.post('save', () => Promise.reject({ code: 500 }));
+            model.post('save', () => Promise.reject(err));
             model.post('save', () => Promise.resolve({ __override: { abc: 456 } }));
 
             return model.save().then((response) => {
                 expect(response.abc).equal(456);
-                expect(response[hooks.ERRORS][0]).deep.equal({ code: 500 });
+                expect(response[hooks.ERRORS][0].code).equal(501);
             });
         });
 
@@ -318,7 +327,7 @@ describe('hooks-promise', () => {
             model = getModel();
             const spy = { original: () => true };
             const spyOriginal = sinon.spy(spy, 'original');
-            sinon.stub(model, 'save', () => spy.original());
+            sinon.stub(model, 'save').returns(spy.original());
 
             hooks.wrap(model);
             model.post('save', [spyPost1, spyPost2]);
