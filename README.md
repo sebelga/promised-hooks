@@ -2,8 +2,10 @@
 
 Add middelwares to execute **before** and **after** your Promises.
 
-[![npm version](https://badge.fury.io/js/promised-hooks.svg)](https://badge.fury.io/js/promised-hooks) [![Build Status](https://travis-ci.org/sebelga/promised-hooks.svg?branch=master)](https://travis-ci.org/sebelga/promised-hooks) 
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/promised-hooks/badge.svg?branch=master)](https://coveralls.io/github/sebelga/promised-hooks?branch=master)
+[![NPM Version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
+[![coveralls-image]][coveralls-url]
+[![Commitizen friendly][commitizen-image]][commitizen-url]  
 
 ## Install
 
@@ -329,3 +331,12 @@ user.save({ name: 'John', password: 'snow' })
 
 ## Credits
 I have been inspired by the [hooks-fixed](https://github.com/vkarpov15/hooks-fixed) library from @vkarpov15 to write this small utility.
+
+[npm-image]: https://img.shields.io/npm/v/promised-hooks.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/promised-hooks
+[travis-image]: https://img.shields.io/travis/sebelga/promised-hooks/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/sebelga/promised-hooks
+[coveralls-image]: https://img.shields.io/coveralls/github/sebelga/promised-hooks.svg
+[coveralls-url]: https://coveralls.io/github/sebelga/promised-hooks?branch=master
+[commitizen-image]: https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
+[commitizen-url]: http://commitizen.github.io/cz-cli/
