@@ -7,6 +7,8 @@ Add middelwares to execute **before** and **after** your Promises.
 [![coveralls-image]][coveralls-url]
 [![Commitizen friendly][commitizen-image]][commitizen-url]  
 
+<img title="code-example" src="code.png" width="85%">
+
 ## Install
 
 ```sh
