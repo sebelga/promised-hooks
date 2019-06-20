@@ -176,6 +176,14 @@ describe('hooks-promise', () => {
                     expect(check2).equal('myPreHookMethod2');
                 });
         });
+
+        it('should catch and reject thrown errors when the original method is not a promise', () => {
+            model.pre('saveThrowError', spies.preHook2);
+            return model.saveThrowError()
+                .catch((err) => {
+                    expect(err.message).equal('Thrown Error');
+                });
+        });
     });
 
     describe('post()', () => {

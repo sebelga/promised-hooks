@@ -9,6 +9,9 @@ module.exports = {
                 resolve('1234');
             }),
             saveReturnObject: () => Promise.resolve({ a: 123 }),
+            saveThrowError: () => {
+                throw new Error('Thrown Error');
+            },
         };
     },
 };
