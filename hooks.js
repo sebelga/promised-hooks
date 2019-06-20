@@ -208,7 +208,12 @@ class HooksPromise {
                 /**
                  * Get the target method response
                  */
-                let responsePromised = originalMethod.apply(self, passedArgs);
+                let responsePromised;
+                try {
+                    responsePromised = originalMethod.apply(self, passedArgs);
+                } catch (e) {
+                    responsePromised = Promise.reject(e);
+                }
 
                 /**
                  * Convert it to a Promise if it is not to be able to chain it
