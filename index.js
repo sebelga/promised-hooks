@@ -1,4 +1,4 @@
 
-const hooks = require('./hooks');
+'use strict';
 
-module.exports = hooks;
+module.exports = require('./lib/');
